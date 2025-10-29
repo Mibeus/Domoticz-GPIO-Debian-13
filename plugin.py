@@ -1,105 +1,166 @@
 """
-<plugin key="WaveshareRelayGPIOD" name="Waveshare Relay Board (gpiod)" author="Custom" version="1.0.0">
+<plugin key="DomoticzRPIGPIO" name="Domoticz RPI GPIO" author="Mibeus" version="2.0.0">
     <description>
-        <h2>Waveshare RPi Relay Board (B) - GPIO Control via gpiod</h2><br/>
-        Controls 8 relay channels via GPIO pins using libgpiod<br/>
+        <h2>Domoticz RPI GPIO - Universal GPIO Control</h2><br/>
+        <h3>Features</h3>
+        <ul>
+            <li>Configurable GPIO pins via gpio_config.json</li>
+            <li>Active LOW / Active HIGH support</li>
+            <li>Custom relay names</li>
+            <li>Auto-reload configuration on Domoticz restart</li>
+        </ul>
+        <h3>Configuration</h3>
+        Edit gpio_config.json in the plugin directory:<br/>
+        <code>nano domoticz/plugins/DomoticzRPIGPIO/gpio_config.json</code><br/>
         <br/>
-        GPIO Mapping (BCM):<br/>
-        - Relay 1: GPIO 5<br/>
-        - Relay 2: GPIO 6<br/>
-        - Relay 3: GPIO 13<br/>
-        - Relay 4: GPIO 16<br/>
-        - Relay 5: GPIO 19<br/>
-        - Relay 6: GPIO 20<br/>
-        - Relay 7: GPIO 21<br/>
-        - Relay 8: GPIO 26<br/>
+        Then restart Domoticz:<br/>
+        <code>sudo systemctl restart domoticz</code><br/>
         <br/>
-        Note: Relays are ACTIVE LOW (GPIO LOW = Relay ON)<br/>
+        <h3>GPIO Pins</h3>
+        Configure your GPIO pins in gpio_config.json<br/>
+        <br/>
+        <h3>Relay Logic</h3>
+        - active_low: GPIO LOW = Relay ON (default for most relay boards)<br/>
+        - active_high: GPIO HIGH = Relay ON<br/>
     </description>
     <params>
-        <param field="Mode1" label="GPIO Chip" width="200px" required="true" default="gpiochip0"/>
+        <param field="Mode6" label="Debug" width="75px">
+            <options>
+                <option label="True" value="Debug"/>
+                <option label="False" value="Normal" default="true"/>
+            </options>
+        </param>
     </params>
 </plugin>
 """
 
 import Domoticz
-import gpiod
+import json
+import os
 
 class BasePlugin:
     enabled = False
     chip = None
     lines = {}
-    
-    # GPIO pin mapping for Waveshare Relay Board (B)
-    RELAY_PINS = {
-        1: 5,   # Relay 1 -> GPIO 5
-        2: 6,   # Relay 2 -> GPIO 6
-        3: 13,  # Relay 3 -> GPIO 13
-        4: 16,  # Relay 4 -> GPIO 16
-        5: 19,  # Relay 5 -> GPIO 19
-        6: 20,  # Relay 6 -> GPIO 20
-        7: 21,  # Relay 7 -> GPIO 21
-        8: 26   # Relay 8 -> GPIO 26
-    }
+    config = {}
+    plugin_path = ""
     
     def __init__(self):
         return
     
     def onStart(self):
-        Domoticz.Log("Waveshare Relay Board (gpiod) plugin starting")
+        Domoticz.Log("Domoticz RPI GPIO plugin starting")
         
-        # Get GPIO chip name from parameters
-        chip_name = Parameters["Mode1"]
+        # Get plugin directory path
+        self.plugin_path = os.path.dirname(os.path.realpath(__file__))
+        Domoticz.Log(f"Plugin path: {self.plugin_path}")
+        
+        # Load configuration from JSON file
+        if not self.load_config():
+            Domoticz.Error("Failed to load configuration. Plugin will not start.")
+            self.enabled = False
+            return
+        
+        # Import gpiod
+        try:
+            import gpiod
+        except ImportError:
+            Domoticz.Error("gpiod module not found! Install it with:")
+            Domoticz.Error("  sudo apt install python3-libgpiod")
+            Domoticz.Error("  or: sudo pip3 install gpiod --break-system-packages")
+            self.enabled = False
+            return
+        
+        # Get configuration values
+        gpio_pins = self.config.get("gpio_pins", [])
+        relay_logic = self.config.get("relay_logic", "active_low")
+        gpio_chip_name = self.config.get("gpio_chip", "gpiochip0")
+        relay_names = self.config.get("relay_names", [])
+        
+        # Validate configuration
+        if not gpio_pins:
+            Domoticz.Error("No GPIO pins configured in gpio_config.json")
+            self.enabled = False
+            return
+        
+        Domoticz.Log(f"Configuration loaded:")
+        Domoticz.Log(f"  GPIO Chip: {gpio_chip_name}")
+        Domoticz.Log(f"  GPIO Pins: {gpio_pins}")
+        Domoticz.Log(f"  Relay Logic: {relay_logic}")
+        Domoticz.Log(f"  Number of relays: {len(gpio_pins)}")
         
         try:
             # Open GPIO chip
-            self.chip = gpiod.Chip(chip_name)
-            Domoticz.Log(f"Opened GPIO chip: {chip_name}")
+            self.chip = gpiod.Chip(gpio_chip_name)
+            Domoticz.Log(f"Opened GPIO chip: {gpio_chip_name}")
             
             # Create devices if they don't exist
             if len(Devices) == 0:
                 Domoticz.Log("Creating relay devices...")
-                for relay_num in range(1, 9):
+                for idx, gpio_pin in enumerate(gpio_pins):
+                    unit_num = idx + 1
+                    
+                    # Get custom relay name or use default
+                    if relay_names and idx < len(relay_names):
+                        relay_name = relay_names[idx]
+                    else:
+                        relay_name = f"Relay {unit_num}"
+                    
                     Domoticz.Device(
-                        Name=f"Relay {relay_num}",
-                        Unit=relay_num,
+                        Name=relay_name,
+                        Unit=unit_num,
                         TypeName="Switch",
                         Used=1
                     ).Create()
-                    Domoticz.Log(f"Created Relay {relay_num} device")
+                    Domoticz.Log(f"Created device: {relay_name} (Unit {unit_num}, GPIO {gpio_pin})")
             
-            # Request GPIO lines as outputs with initial HIGH state (relays OFF)
-            for relay_num, gpio_pin in self.RELAY_PINS.items():
+            # Determine initial GPIO state based on relay logic
+            # For active_low: HIGH = OFF, for active_high: LOW = OFF
+            initial_state = 1 if relay_logic == "active_low" else 0
+            
+            # Request GPIO lines as outputs with initial state (all relays OFF)
+            for idx, gpio_pin in enumerate(gpio_pins):
+                unit_num = idx + 1
                 try:
                     line = self.chip.get_line(gpio_pin)
                     line.request(
-                        consumer="domoticz-relay",
+                        consumer="domoticz-gpio",
                         type=gpiod.LINE_REQ_DIR_OUT,
-                        default_vals=[1]  # HIGH = Relay OFF (active low)
+                        default_vals=[initial_state]
                     )
-                    self.lines[relay_num] = line
-                    Domoticz.Log(f"Configured GPIO {gpio_pin} (Relay {relay_num}) as output")
+                    self.lines[unit_num] = {
+                        'line': line,
+                        'gpio_pin': gpio_pin
+                    }
+                    Domoticz.Log(f"Configured GPIO {gpio_pin} (Unit {unit_num}) as output, initial state: {initial_state}")
                 except Exception as e:
-                    Domoticz.Error(f"Failed to configure GPIO {gpio_pin} (Relay {relay_num}): {str(e)}")
+                    Domoticz.Error(f"Failed to configure GPIO {gpio_pin} (Unit {unit_num}): {str(e)}")
             
             self.enabled = True
             Domoticz.Log("Plugin started successfully")
+            Domoticz.Log(f"Active relay logic: {relay_logic}")
             
         except Exception as e:
             Domoticz.Error(f"Failed to initialize GPIO: {str(e)}")
             self.enabled = False
     
     def onStop(self):
-        Domoticz.Log("Waveshare Relay Board plugin stopping")
+        Domoticz.Log("Domoticz RPI GPIO plugin stopping")
+        
+        # Get relay logic from config
+        relay_logic = self.config.get("relay_logic", "active_low")
+        off_state = 1 if relay_logic == "active_low" else 0
         
         # Release all GPIO lines and turn off relays
-        for relay_num, line in self.lines.items():
+        for unit_num, line_info in self.lines.items():
             try:
-                line.set_value(1)  # HIGH = Relay OFF
+                line = line_info['line']
+                gpio_pin = line_info['gpio_pin']
+                line.set_value(off_state)  # Turn relay OFF
                 line.release()
-                Domoticz.Log(f"Released GPIO for Relay {relay_num}")
+                Domoticz.Log(f"Released GPIO {gpio_pin} (Unit {unit_num})")
             except Exception as e:
-                Domoticz.Error(f"Error releasing GPIO for Relay {relay_num}: {str(e)}")
+                Domoticz.Error(f"Error releasing GPIO for Unit {unit_num}: {str(e)}")
         
         # Close chip
         if self.chip:
@@ -123,23 +184,88 @@ class BasePlugin:
             return
         
         try:
-            line = self.lines[Unit]
-            gpio_pin = self.RELAY_PINS[Unit]
+            line_info = self.lines[Unit]
+            line = line_info['line']
+            gpio_pin = line_info['gpio_pin']
             
-            # IMPORTANT: Inverted logic for active-low relays
-            # Domoticz "On" -> GPIO LOW (0) -> Relay physically ON
-            # Domoticz "Off" -> GPIO HIGH (1) -> Relay physically OFF
+            # Get relay logic from config
+            relay_logic = self.config.get("relay_logic", "active_low")
+            
+            # Determine GPIO value based on relay logic and command
+            if relay_logic == "active_low":
+                # Active LOW: ON = GPIO LOW (0), OFF = GPIO HIGH (1)
+                gpio_value = 0 if Command == "On" else 1
+            else:
+                # Active HIGH: ON = GPIO HIGH (1), OFF = GPIO LOW (0)
+                gpio_value = 1 if Command == "On" else 0
+            
+            # Set GPIO value
+            line.set_value(gpio_value)
+            
+            # Update device status in Domoticz
             if Command == "On":
-                line.set_value(0)  # LOW = Relay ON
                 Devices[Unit].Update(nValue=1, sValue="On")
-                Domoticz.Log(f"Relay {Unit} (GPIO {gpio_pin}) turned ON (LOW)")
+                Domoticz.Log(f"Unit {Unit} (GPIO {gpio_pin}) turned ON (GPIO={gpio_value})")
             elif Command == "Off":
-                line.set_value(1)  # HIGH = Relay OFF
                 Devices[Unit].Update(nValue=0, sValue="Off")
-                Domoticz.Log(f"Relay {Unit} (GPIO {gpio_pin}) turned OFF (HIGH)")
+                Domoticz.Log(f"Unit {Unit} (GPIO {gpio_pin}) turned OFF (GPIO={gpio_value})")
             
         except Exception as e:
-            Domoticz.Error(f"Error controlling Relay {Unit}: {str(e)}")
+            Domoticz.Error(f"Error controlling Unit {Unit}: {str(e)}")
+    
+    def load_config(self):
+        """Load configuration from gpio_config.json"""
+        config_file = os.path.join(self.plugin_path, "gpio_config.json")
+        
+        Domoticz.Log(f"Loading configuration from: {config_file}")
+        
+        if not os.path.exists(config_file):
+            Domoticz.Error(f"Configuration file not found: {config_file}")
+            Domoticz.Error("Please create gpio_config.json in the plugin directory")
+            Domoticz.Error("See README.md for example configuration")
+            return False
+        
+        try:
+            with open(config_file, 'r') as f:
+                self.config = json.load(f)
+            
+            # Validate required fields
+            if "gpio_pins" not in self.config:
+                Domoticz.Error("Missing 'gpio_pins' in configuration")
+                return False
+            
+            if not isinstance(self.config["gpio_pins"], list):
+                Domoticz.Error("'gpio_pins' must be a list")
+                return False
+            
+            if len(self.config["gpio_pins"]) == 0:
+                Domoticz.Error("'gpio_pins' list is empty")
+                return False
+            
+            # Set defaults for optional fields
+            if "relay_logic" not in self.config:
+                self.config["relay_logic"] = "active_low"
+                Domoticz.Log("Using default relay_logic: active_low")
+            
+            if "gpio_chip" not in self.config:
+                self.config["gpio_chip"] = "gpiochip0"
+                Domoticz.Log("Using default gpio_chip: gpiochip0")
+            
+            # Validate relay_logic value
+            if self.config["relay_logic"] not in ["active_low", "active_high"]:
+                Domoticz.Error(f"Invalid relay_logic: {self.config['relay_logic']}")
+                Domoticz.Error("Must be 'active_low' or 'active_high'")
+                return False
+            
+            Domoticz.Log("Configuration loaded successfully")
+            return True
+            
+        except json.JSONDecodeError as e:
+            Domoticz.Error(f"Invalid JSON in configuration file: {str(e)}")
+            return False
+        except Exception as e:
+            Domoticz.Error(f"Error loading configuration: {str(e)}")
+            return False
 
 global _plugin
 _plugin = BasePlugin()

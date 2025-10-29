@@ -1,0 +1,15 @@
+{
+  "gpio_pins": [5, 6, 13, 16, 19, 20, 21, 26],
+  "relay_logic": "active_low",
+  "gpio_chip": "gpiochip0",
+  "relay_names": [
+    "Relay 1",
+    "Relay 2",
+    "Relay 3",
+    "Relay 4",
+    "Relay 5",
+    "Relay 6",
+    "Relay 7",
+    "Relay 8"
+  ]
+}

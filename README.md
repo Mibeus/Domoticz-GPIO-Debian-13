@@ -1,327 +1,451 @@
-# Domoticz Trixie Debian GPIO Plugin
+# Domoticz RPI GPIO Plugin
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.x](https://img.shields.io/badge/python-3.x-blue.svg)](https://www.python.org/)
 [![Domoticz](https://img.shields.io/badge/Domoticz-2025.2+-green.svg)](https://www.domoticz.com/)
 [![Debian](https://img.shields.io/badge/Debian-13%20Trixie-red.svg)](https://www.debian.org/)
 
-Moderný Python plugin pre Domoticz na ovládanie **Waveshare RPi Relay Board (B)** pomocou **libgpiod** knižnice. Riešenie pre **Debian 13 (Trixie)** kde už nefunguje staré WiringPi.
+Universal GPIO control plugin for Domoticz on Raspberry Pi. Control relay boards, LEDs, and other GPIO devices with configurable pins and logic levels.
 
 ---
 
-## 🎯 Problém a riešenie
+## ✨ Features
 
-### Problém
-- **WiringPi** je deprecated od 2019
-- **sysfs GPIO** (`/sys/class/gpio`) je deprecated od Linux kernel 4.8
-- Na Debian 13 (Trixie) už **neexistuje cesta** ako ovládať GPIO cez staré metódy
-- Máte stovky vyrobených DPS s relé a potrebujete ich prevádzkovať
-
-### Riešenie
-✅ Tento plugin používa **libgpiod** - moderný, oficiálne podporovaný GPIO interface  
-✅ Funguje na **Debian 13 Trixie** + **Domoticz 2025.2**  
-✅ **Minimálna inštalácia** - len jeden balík (`python3-gpiod`)  
-✅ **Active LOW logika** správne implementovaná pre Waveshare dosky  
+- ✅ **Configurable GPIO pins** via JSON file
+- ✅ **Active LOW / Active HIGH** support
+- ✅ **Custom relay names**
+- ✅ **Auto-detection** of Domoticz plugin directory
+- ✅ **No hardcoded paths** - works with any Domoticz installation
+- ✅ **Modern libgpiod** library (replaces deprecated WiringPi)
+- ✅ **Easy configuration** via text editor (nano)
+- ✅ **Support for multiple relay boards**
 
 ---
 
-## ✨ Funkcie
+## 📋 Requirements
 
-- ✅ Ovládanie **8 relé kanálov** cez GPIO
-- ✅ Použitie modernej **libgpiod** knižnice
-- ✅ **Active LOW** logika (správne pre Waveshare Relay Board)
-- ✅ Automatické vytvorenie 8 switch zariadení v Domoticz
-- ✅ Bezpečné vypnutie všetkých relé pri zastavení pluginu
-- ✅ **Minimálna inštalácia** - len jeden APT balík
-- ✅ Kompletná slovenská dokumentácia
-
----
-
-## 📋 Požiadavky
-
-| Komponent | Verzia |
-|-----------|--------|
-| **Raspberry Pi** | 3/4/5 (testované) |
-| **OS** | Debian 13 (Trixie) / Raspberry Pi OS |
-| **Domoticz** | 2025.2 alebo novší |
-| **Python** | 3.x (už v systéme) |
-| **Hardware** | Waveshare RPi Relay Board (B) |
+| Component | Version |
+|-----------|---------|
+| **Raspberry Pi** | 3/4/5 |
+| **OS** | Debian 13 (Trixie) or Raspberry Pi OS |
+| **Domoticz** | 2025.2+ |
+| **Python** | 3.x (included in OS) |
+| **python3-libgpiod** | Required |
 
 ---
 
-## 🔌 GPIO Mapping
+## 📥 Installation
 
-| Relé    | BCM GPIO | Fyzický Pin | Logika |
-|---------|----------|-------------|--------|
-| Relay 1 | GPIO 5   | Pin 29      | Active LOW |
-| Relay 2 | GPIO 6   | Pin 31      | Active LOW |
-| Relay 3 | GPIO 13  | Pin 33      | Active LOW |
-| Relay 4 | GPIO 16  | Pin 36      | Active LOW |
-| Relay 5 | GPIO 19  | Pin 35      | Active LOW |
-| Relay 6 | GPIO 20  | Pin 38      | Active LOW |
-| Relay 7 | GPIO 21  | Pin 40      | Active LOW |
-| Relay 8 | GPIO 26  | Pin 37      | Active LOW |
-
-**Active LOW znamená:**
-- GPIO **LOW (0)** = Relé **ZAP** ✅
-- GPIO **HIGH (1)** = Relé **VYP** ❌
-
----
-
-## 📥 Inštalácia
-
-### Metóda 1: Automatická inštalácia (odporúčané)
+### Step 1: Install dependencies
 
 ```bash
-# 1. Stiahni repozitár
-git clone https://github.com/Mibeus/Domoticz-GPIO-Debian-13.git
-cd Domoticz-GPIO-Debian-13
-
-# 2. Spusti inštalačný skript
-chmod +x install.sh
-sudo ./install.sh
-
-# 3. Reštartuj Domoticz
-sudo systemctl restart domoticz
-```
-
-### Metóda 2: Manuálna inštalácia
-
-```bash
-# 1. Nainštaluj python3-gpiod
+# Install python3-libgpiod
 sudo apt update
-sudo apt install -y python3-gpiod
+sudo apt install python3-libgpiod -y
 
-# 2. Vytvor plugin adresár
-sudo mkdir -p /home/pi/domoticz/plugins/WaveshareRelayGPIOD
+# Alternative: Install via pip if apt package not available
+sudo pip3 install gpiod --break-system-packages
+```
 
-# 3. Skopíruj plugin
-sudo cp plugin.py /home/pi/domoticz/plugins/WaveshareRelayGPIOD/
+### Step 2: Install plugin
 
-# 4. Nastav práva
-sudo chown -R pi:pi /home/pi/domoticz/plugins/WaveshareRelayGPIOD
-sudo chmod +x /home/pi/domoticz/plugins/WaveshareRelayGPIOD/plugin.py
+```bash
+# Navigate to Domoticz plugins directory
+cd domoticz/plugins
 
-# 5. Reštartuj Domoticz
+# Clone the repository
+git clone https://github.com/Mibeus/Domoticz-GPIO-Debian-13.git DomoticzRPIGPIO
+
+# Restart Domoticz
 sudo systemctl restart domoticz
 ```
 
 ---
 
-## ⚙️ Konfigurácia v Domoticz
+## ⚙️ Configuration
 
-1. Otvor Domoticz web rozhranie: `http://[IP_ADRESA]:8080`
-2. Choď do **Setup → Hardware**
-3. Pridaj nový hardvér:
-   - **Name:** `Relay Board` (alebo čokoľvek chceš)
-   - **Type:** `Waveshare Relay Board (gpiod)`
-   - **GPIO Chip:** `gpiochip0` (default)
-4. Klikni **Add**
-5. Plugin automaticky vytvorí 8 switch zariadení (`Relay 1-8`)
-6. Zariadenia nájdeš v sekcii **Switches**
+### Edit Configuration File
 
----
-
-## 🧪 Testovanie GPIO
-
-Pred inštaláciou pluginu môžeš otestovať či GPIO funguje:
+The plugin reads its configuration from `gpio_config.json`. Edit this file to customize GPIO pins, relay logic, and names.
 
 ```bash
-# Spusti test skript
-sudo python3 test_relay.py
+# Navigate to plugin directory
+cd domoticz/plugins/DomoticzRPIGPIO
+
+# Edit configuration
+nano gpio_config.json
 ```
 
-Test skript:
-- ✅ Otestuje všetky GPIO piny
-- ✅ Postupne zapne/vypne každé relé
-- ✅ Overí že relé fyzicky prepínajú
-- ✅ Nepoškodí žiadne nastavenia
+### Configuration File Format
 
----
+```json
+{
+  "gpio_pins": [5, 6, 13, 16, 19, 20, 21, 26],
+  "relay_logic": "active_low",
+  "gpio_chip": "gpiochip0",
+  "relay_names": [
+    "Relay 1",
+    "Relay 2",
+    "Relay 3",
+    "Relay 4",
+    "Relay 5",
+    "Relay 6",
+    "Relay 7",
+    "Relay 8"
+  ]
+}
+```
 
-## 🎮 Použitie
+### Configuration Parameters
 
-Po pridaní hardvéru máš k dispozícii **8 prepínačov**:
-- **Relay 1** až **Relay 8**
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| **gpio_pins** | Array | List of BCM GPIO pin numbers to use | Required |
+| **relay_logic** | String | `"active_low"` or `"active_high"` | `"active_low"` |
+| **gpio_chip** | String | GPIO chip device name | `"gpiochip0"` |
+| **relay_names** | Array | Custom names for each relay | `["Relay 1", ...]` |
 
-Každý prepínač má dva stavy:
-- **ON** 🟢 = Relé zapnuté (GPIO LOW)
-- **OFF** ⚫ = Relé vypnuté (GPIO HIGH)
+### Relay Logic
 
-Ovládanie:
-- 🌐 Cez web rozhranie
-- 📱 Cez mobilnú aplikáciu
-- 🎬 Cez scény a scripty
-- 🔌 Cez Domoticz API
-- 🏠 Cez integrácie (Home Assistant, MQTT, atď.)
+- **active_low** (default): 
+  - GPIO LOW (0) = Relay ON
+  - GPIO HIGH (1) = Relay OFF
+  - Used by most relay boards (Waveshare, SainSmart, etc.)
 
----
+- **active_high**:
+  - GPIO HIGH (1) = Relay ON
+  - GPIO LOW (0) = Relay OFF
+  - Used by some solid-state relays and LED boards
 
-## 🐛 Riešenie problémov
-
-### Plugin sa nezobrazuje v Domoticz
+### After Configuration Changes
 
 ```bash
-# Skontroluj Domoticz log
-tail -f /tmp/domoticz.log
-
-# Skontroluj či je plugin správne nainštalovaný
-ls -la /home/pi/domoticz/plugins/WaveshareRelayGPIOD/
-
-# Reštartuj Domoticz
+# Restart Domoticz to apply changes
 sudo systemctl restart domoticz
 ```
 
-### Relé nereagujú
+---
+
+## 🎮 Usage in Domoticz
+
+### Add Hardware
+
+1. Open Domoticz web interface: `http://[IP_ADDRESS]:8080`
+2. Go to **Setup → Hardware**
+3. Add new hardware:
+   - **Name:** `GPIO Control` (or any name you want)
+   - **Type:** `Domoticz RPI GPIO`
+4. Click **Add**
+
+### Devices
+
+The plugin automatically creates switch devices based on your configuration:
+- Number of switches = number of GPIO pins configured
+- Switch names come from `relay_names` in config file
+
+Find devices in **Switches** section.
+
+---
+
+## 🔌 GPIO Pin Reference
+
+### Common GPIO Pins (BCM Numbering)
+
+| BCM GPIO | Physical Pin | Waveshare Relay Board |
+|----------|--------------|----------------------|
+| GPIO 5   | Pin 29       | Relay 1              |
+| GPIO 6   | Pin 31       | Relay 2              |
+| GPIO 13  | Pin 33       | Relay 3              |
+| GPIO 16  | Pin 36       | Relay 4              |
+| GPIO 19  | Pin 35       | Relay 5              |
+| GPIO 20  | Pin 38       | Relay 6              |
+| GPIO 21  | Pin 40       | Relay 7              |
+| GPIO 26  | Pin 37       | Relay 8              |
+
+**⚠️ Important:** Use BCM GPIO numbers in configuration, not physical pin numbers!
+
+### Check Available GPIO Pins
 
 ```bash
-# Skontroluj či python3-gpiod je nainštalované
-dpkg -l | grep gpiod
-
-# Skontroluj oprávnenia GPIO
+# List GPIO chips
 ls -la /dev/gpiochip*
 
-# Otestuj GPIO manuálne
-sudo gpioinfo gpiochip0 | grep -E "(5|6|13|16|19|20|21|26)"
+# Show GPIO information
+gpioinfo gpiochip0
 ```
 
-### Chyba "Permission denied" na GPIO
+---
+
+## 📝 Configuration Examples
+
+### Example 1: Waveshare 8-Channel Relay Board
+
+```json
+{
+  "gpio_pins": [5, 6, 13, 16, 19, 20, 21, 26],
+  "relay_logic": "active_low",
+  "gpio_chip": "gpiochip0",
+  "relay_names": [
+    "Light Living Room",
+    "Light Kitchen",
+    "Light Bedroom",
+    "Light Bathroom",
+    "Fan",
+    "Pump",
+    "Heater",
+    "Door Lock"
+  ]
+}
+```
+
+### Example 2: 4-Channel Relay Board
+
+```json
+{
+  "gpio_pins": [17, 27, 22, 23],
+  "relay_logic": "active_low",
+  "gpio_chip": "gpiochip0",
+  "relay_names": [
+    "Relay 1",
+    "Relay 2",
+    "Relay 3",
+    "Relay 4"
+  ]
+}
+```
+
+### Example 3: LED Strip (Active High)
+
+```json
+{
+  "gpio_pins": [18, 23, 24, 25],
+  "relay_logic": "active_high",
+  "gpio_chip": "gpiochip0",
+  "relay_names": [
+    "LED Red",
+    "LED Green",
+    "LED Blue",
+    "LED White"
+  ]
+}
+```
+
+### Example 4: Using Different GPIO Chip
+
+```json
+{
+  "gpio_pins": [0, 1, 2, 3],
+  "relay_logic": "active_low",
+  "gpio_chip": "gpiochip1",
+  "relay_names": [
+    "Expander 1",
+    "Expander 2",
+    "Expander 3",
+    "Expander 4"
+  ]
+}
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### Plugin doesn't appear in Hardware list
 
 ```bash
-# Pridaj Domoticz používateľa do gpio skupiny
-sudo usermod -a -G gpio pi
+# Check Domoticz log
+tail -f /tmp/domoticz.log
 
-# Reštartuj systém
+# Check if plugin directory exists
+ls -la domoticz/plugins/DomoticzRPIGPIO/
+
+# Check if files are present
+ls -la domoticz/plugins/DomoticzRPIGPIO/
+# Should see: plugin.py and gpio_config.json
+
+# Restart Domoticz
+sudo systemctl restart domoticz
+```
+
+### Relays don't respond
+
+```bash
+# Check if python3-libgpiod is installed
+dpkg -l | grep libgpiod
+
+# Check GPIO permissions
+ls -la /dev/gpiochip*
+
+# Test GPIO manually
+sudo gpioset gpiochip0 5=0  # Turn on (if active_low)
+sudo gpioset gpiochip0 5=1  # Turn off (if active_low)
+```
+
+### Configuration errors
+
+```bash
+# Check JSON syntax
+cat domoticz/plugins/DomoticzRPIGPIO/gpio_config.json | python3 -m json.tool
+
+# View Domoticz log for specific errors
+tail -f /tmp/domoticz.log | grep GPIO
+```
+
+### Permission denied on GPIO
+
+```bash
+# Add user to gpio group
+sudo usermod -a -G gpio $USER
+
+# Or for domoticz user
+sudo usermod -a -G gpio domoticz
+
+# Reboot
 sudo reboot
 ```
 
-### GPIO sú už použité
+### GPIO already in use
 
 ```bash
-# Zisti ktorý proces používa GPIO
+# Find what's using GPIO
 sudo lsof | grep gpiochip
 
-# Uvoľni GPIO (nastav všetky na HIGH = vypnuté)
+# Release all GPIO pins (set to OFF state)
+# For active_low relays:
 sudo gpioset gpiochip0 5=1 6=1 13=1 16=1 19=1 20=1 21=1 26=1
 ```
 
 ---
 
-## 🔧 Pokročilé nastavenia
+## 🧪 Testing
 
-### Testovanie GPIO bez Domoticz
+### Test GPIO without Domoticz
 
 ```bash
-# Nainštaluj gpio tools
+# Install GPIO tools
 sudo apt install gpiod
 
-# Zisti informácie o GPIO
+# Get GPIO chip info
 gpioinfo gpiochip0
 
-# Nastav GPIO 5 na LOW (relé ZAP)
-gpioset gpiochip0 5=0
+# Test relay 1 (GPIO 5)
+sudo gpioset gpiochip0 5=0  # Relay ON (active_low)
+sleep 2
+sudo gpioset gpiochip0 5=1  # Relay OFF
 
-# Nastav GPIO 5 na HIGH (relé VYP)
-gpioset gpiochip0 5=1
-
-# Otestuj všetky relé naraz
-gpioset gpiochip0 5=0 6=0 13=0 16=0 19=0 20=0 21=0 26=0  # Všetky ZAP
-gpioset gpiochip0 5=1 6=1 13=1 16=1 19=1 20=1 21=1 26=1  # Všetky VYP
+# Test all relays at once
+sudo gpioset gpiochip0 5=0 6=0 13=0 16=0 19=0 20=0 21=0 26=0  # All ON
+sleep 2
+sudo gpioset gpiochip0 5=1 6=1 13=1 16=1 19=1 20=1 21=1 26=1  # All OFF
 ```
 
-### Zmena GPIO Chip
+### Verify Configuration
 
-V nastaveniach hardvéru môžeš zmeniť `GPIO Chip` parameter:
-- `gpiochip0` - hlavný GPIO chip (default)
-- `gpiochip1` - dodatočný GPIO expandér
-- atď.
-
----
-
-## 📚 Technické detaily
-
-### Prečo gpiod namiesto WiringPi?
-
-| Vlastnosť | WiringPi | libgpiod |
-|-----------|----------|----------|
-| **Podpora** | ❌ Deprecated 2019 | ✅ Aktívne udržiavaná |
-| **Sysfs** | ❌ Deprecated kernel 4.8 | ✅ Moderné character device |
-| **Debian 13** | ❌ Nefunguje | ✅ Plná podpora |
-| **Dokumentácia** | ❌ Zastaralá | ✅ Aktuálna |
-
-### Active LOW logika
-
-Waveshare Relay Board používa **optočleny** s Active LOW logikou:
-
-```
-GPIO HIGH (1) → optočlen nevedie → relé VYP
-GPIO LOW (0)  → optočlen vedie   → relé ZAP
-```
-
-Plugin **automaticky invertuje** logiku:
-```
-Domoticz ON  → GPIO LOW  → Relé ZAP ✅
-Domoticz OFF → GPIO HIGH → Relé VYP ✅
+```bash
+# Check JSON is valid
+cd domoticz/plugins/DomoticzRPIGPIO
+python3 -c "import json; print(json.load(open('gpio_config.json')))"
 ```
 
 ---
 
-## 📖 Referencie a linky
+## 🔄 Updating the Plugin
 
-- 📘 [Waveshare RPi Relay Board (B) Wiki](https://www.waveshare.com/wiki/RPi_Relay_Board_(B))
-- 📗 [libgpiod Documentation](https://git.kernel.org/pub/scm/libs/libgpiod/libgpiod.git/about/)
-- 📙 [Domoticz Python Plugin API](https://www.domoticz.com/wiki/Developing_a_Python_plugin)
+```bash
+# Navigate to plugin directory
+cd domoticz/plugins/DomoticzRPIGPIO
+
+# Pull latest changes
+git pull
+
+# Restart Domoticz
+sudo systemctl restart domoticz
+```
+
+**⚠️ Note:** Your `gpio_config.json` will not be overwritten during update.
+
+---
+
+## 🎯 Use Cases
+
+- **Home Automation:** Control lights, fans, heaters
+- **Garden Automation:** Irrigation pumps, valves
+- **Aquarium Control:** Lights, pumps, heaters
+- **Industrial Control:** Relays, valves, motors
+- **Security Systems:** Door locks, sirens
+- **Custom Projects:** Any GPIO-controlled device
+
+---
+
+## 📚 Technical Details
+
+### Why libgpiod?
+
+| Library | Status | Debian 13 |
+|---------|--------|-----------|
+| **WiringPi** | ❌ Deprecated 2019 | Not available |
+| **sysfs GPIO** | ❌ Deprecated kernel 4.8 | Not available |
+| **libgpiod** | ✅ Active development | ✅ Fully supported |
+
+### GPIO Character Device
+
+Modern Linux kernels use character devices (`/dev/gpiochipX`) instead of sysfs. This provides:
+- Better performance
+- More reliable access
+- Proper permission management
+- Modern API
+
+---
+
+## 🔗 Links & Resources
+
+- 📘 [libgpiod Documentation](https://git.kernel.org/pub/scm/libs/libgpiod/libgpiod.git/about/)
+- 📗 [Domoticz Python Plugin API](https://www.domoticz.com/wiki/Developing_a_Python_plugin)
+- 📙 [Raspberry Pi GPIO Pinout](https://pinout.xyz/)
 - 📕 [Linux GPIO Character Device](https://www.kernel.org/doc/html/latest/driver-api/gpio/using-gpio.html)
 
 ---
 
-## 🤝 Prispievanie
+## 🤝 Contributing
 
-Príspevky sú vítané! Ak máš nápad na zlepšenie:
+Contributions are welcome! Please:
 
-1. Fork repozitára
-2. Vytvor feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commitni zmeny (`git commit -m 'Add some AmazingFeature'`)
-4. Push do branch (`git push origin feature/AmazingFeature`)
-5. Otvor Pull Request
-
----
-
-## 📝 Licencia
-
-Tento projekt je licencovaný pod **MIT License** - pozri [LICENSE](LICENSE) súbor pre detaily.
-
-Znamená to že môžeš:
-- ✅ Komerčne používať
-- ✅ Modifikovať
-- ✅ Distribuovať
-- ✅ Súkromne používať
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
 ---
 
-## 👨‍💻 Autor
+## 📝 License
 
-Plugin vytvorený pre komunitu používateľov Domoticz, ktorí potrebujú riešenie pre GPIO na Debian 13.
+MIT License - see [LICENSE](LICENSE) file for details.
 
----
-
-## 🆘 Podpora
-
-Pri problémoch:
-1. Skontroluj `/tmp/domoticz.log`
-2. Otestuj GPIO manuálne pomocou `gpioset`
-3. Skontroluj `dmesg` pre kernel chyby
-4. Over správnosť zapojenia podľa Waveshare wiki
-5. Otvor [Issue](../../issues) na GitHube
+You can:
+- ✅ Use commercially
+- ✅ Modify
+- ✅ Distribute
+- ✅ Use privately
 
 ---
 
-## 🎉 Ďakujeme
+## 🆘 Support
 
-Tento plugin vznikol z potreby komunity prevádzkovať existujúce hardvérové riešenia na moderných systémoch. Ďakujeme všetkým, ktorí prispeli nápadmi a testovaním!
+- **Issues:** [GitHub Issues](https://github.com/Mibeus/Domoticz-GPIO-Debian-13/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/Mibeus/Domoticz-GPIO-Debian-13/discussions)
+- **Domoticz Forum:** [Domoticz.com Forum](https://www.domoticz.com/forum/)
 
 ---
 
-**Verzia:** 1.0.0  
-**Posledná aktualizácia:** Október 2025  
-**Stav:** Stabilný a pripravený na produkčné použitie
+## 📊 Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history and changes.
+
+---
+
+**Author:** [@Mibeus](https://github.com/Mibeus)  
+**Repository:** [Domoticz-GPIO-Debian-13](https://github.com/Mibeus/Domoticz-GPIO-Debian-13)  
+**Version:** 2.0.0  
+**Status:** Production ready  
+**Tested on:** Raspberry Pi 4, Debian 13 Trixie, Domoticz 2025.2
