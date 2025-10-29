@@ -23,7 +23,7 @@ Tento návod ťa prevedie vytvorením GitHub repozitára a nahratím súborov **
 
 3. **Vyplň údaje repozitára:**
    ```
-   Repository name: domoticz-trixie-debian-gpio
+   Repository name: Domoticz-GPIO-Debian-13
    Description: Domoticz plugin for Waveshare Relay Board using libgpiod on Debian 13
    
    ☑️ Public (odporúčané - aby ho mohli ostatní používať)
@@ -39,7 +39,7 @@ Tento návod ťa prevedie vytvorením GitHub repozitára a nahratím súborov **
 ### Krok 2: Nahraj súbory
 
 1. Na stránke nového repozitára klikni na **"uploading an existing file"**
-   - Alebo priamo: `https://github.com/Mibeus/domoticz-trixie-debian-gpio/upload/main`
+   - Alebo priamo: `https://github.com/Mibeus/Domoticz-GPIO-Debian-13/upload/main`
 
 2. **Drag & Drop** alebo klikni **"choose your files"**
 
@@ -78,7 +78,7 @@ Tento návod ťa prevedie vytvorením GitHub repozitára a nahratím súborov **
 1. Klikni **"File" → "New repository"**
 2. Vyplň:
    ```
-   Name: domoticz-trixie-debian-gpio
+   Name: Domoticz-GPIO-Debian-13
    Description: Domoticz plugin for Waveshare Relay Board
    Local path: C:\Users\Mibeus\Documents\GitHub\
    ☑️ Initialize with README (NEOZNAČ)
@@ -91,7 +91,7 @@ Tento návod ťa prevedie vytvorením GitHub repozitára a nahratím súborov **
 
 1. Otvor priečinok repozitára vo Windows Exploreri:
    ```
-   C:\Users\Mibeus\Documents\GitHub\domoticz-trixie-debian-gpio\
+   C:\Users\Mibeus\Documents\GitHub\Domoticz-GPIO-Debian-13\
    ```
 
 2. **Skopíruj** tam všetky súbory projektu:
@@ -141,7 +141,7 @@ git config --global user.email "tvoj.email@example.com"
 ### Krok 3: Vytvor repozitár na GitHub
 
 1. Choď na https://github.com/new
-2. Vytvor repozitár s názvom: `domoticz-trixie-debian-gpio`
+2. Vytvor repozitár s názvom: `Domoticz-GPIO-Debian-13`
 3. **NEOZNAČ** "Initialize this repository with a README"
 4. Klikni "Create repository"
 
@@ -151,7 +151,7 @@ V **Git Bash** naviguj do priečinka so súbormi a spusti:
 
 ```bash
 # Prejdi do priečinka so súbormi
-cd /c/Users/Mibeus/Downloads/domoticz-trixie-debian-gpio
+cd /c/Users/Mibeus/Downloads/Domoticz-GPIO-Debian-13
 
 # Inicializuj Git repozitár
 git init
@@ -163,7 +163,7 @@ git add .
 git commit -m "Initial commit - Waveshare Relay Board plugin v1.0.0"
 
 # Pripoj sa na GitHub repozitár (ZMEŇ Mibeus)
-git remote add origin https://github.com/Mibeus/domoticz-trixie-debian-gpio.git
+git remote add origin https://github.com/Mibeus/Domoticz-GPIO-Debian-13.git
 
 # Premenuj branch na main
 git branch -M main
@@ -182,7 +182,7 @@ Pri `git push` ťa GitHub požiada o prihlásenie.
 
 Po nahratí otvor v prehliadači:
 ```
-https://github.com/Mibeus/domoticz-trixie-debian-gpio
+https://github.com/Mibeus/Domoticz-GPIO-Debian-13
 ```
 
 Máš vidieť:
@@ -227,9 +227,9 @@ git push
 
 Po vytvorení repozitára budeš mať:
 
-- **Hlavná stránka:** `https://github.com/Mibeus/domoticz-trixie-debian-gpio`
-- **Clone URL:** `https://github.com/Mibeus/domoticz-trixie-debian-gpio.git`
-- **Raw súbory:** `https://raw.githubusercontent.com/Mibeus/domoticz-trixie-debian-gpio/main/plugin.py`
+- **Hlavná stránka:** `https://github.com/Mibeus/Domoticz-GPIO-Debian-13`
+- **Clone URL:** `https://github.com/Mibeus/Domoticz-GPIO-Debian-13.git`
+- **Raw súbory:** `https://raw.githubusercontent.com/Mibeus/Domoticz-GPIO-Debian-13/main/plugin.py`
 
 ---
 

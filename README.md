@@ -74,8 +74,8 @@ Moderný Python plugin pre Domoticz na ovládanie **Waveshare RPi Relay Board (B
 
 ```bash
 # 1. Stiahni repozitár
-git clone https://github.com/Mibeus/domoticz-trixie-debian-gpio.git
-cd domoticz-trixie-debian-gpio
+git clone https://github.com/Mibeus/Domoticz-GPIO-Debian-13.git
+cd Domoticz-GPIO-Debian-13
 
 # 2. Spusti inštalačný skript
 chmod +x install.sh
