@@ -90,9 +90,10 @@ class BasePlugin:
         Domoticz.Log(f"  Number of relays: {len(gpio_pins)}")
         
         try:
-            # Open GPIO chip
-            self.chip = gpiod.Chip(gpio_chip_name)
-            Domoticz.Log(f"Opened GPIO chip: {gpio_chip_name}")
+            # Open GPIO chip - use full path
+            gpio_chip_path = f"/dev/{gpio_chip_name}"
+            self.chip = gpiod.Chip(gpio_chip_path)
+            Domoticz.Log(f"Opened GPIO chip: {gpio_chip_path}")
             
             # Create devices if they don't exist
             if len(Devices) == 0:
