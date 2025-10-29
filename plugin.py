@@ -135,6 +135,29 @@ class BasePlugin:
                 self.init_gpio_v1(gpio_chip_name, gpio_pins, relay_logic)
             
             self.enabled = True
+            
+            # Synchronize GPIO states with Domoticz device states
+            # This restores the last known state after reboot/restart
+            Domoticz.Log("Synchronizing GPIO states with Domoticz...")
+            for unit_num, line_info in self.lines.items():
+                if unit_num in Devices:
+                    device_state = Devices[unit_num].nValue
+                    gpio_pin = line_info['gpio_pin']
+                    
+                    # Restore GPIO to match Domoticz state
+                    if device_state == 1:  # Device is ON in Domoticz
+                        command = "On"
+                    else:  # Device is OFF in Domoticz
+                        command = "Off"
+                    
+                    # Set GPIO without updating Domoticz (already has correct state)
+                    if self.gpiod_version >= 2:
+                        self.set_gpio_v2_silent(gpio_pin, command, relay_logic)
+                    else:
+                        self.set_gpio_v1_silent(gpio_pin, line_info, command, relay_logic)
+                    
+                    Domoticz.Log(f"Restored Unit {unit_num} (GPIO {gpio_pin}) to state: {command}")
+            
             Domoticz.Log("Plugin started successfully")
             Domoticz.Log(f"Active relay logic: {relay_logic}")
             
@@ -312,6 +335,19 @@ class BasePlugin:
             Devices[unit_num].Update(nValue=0, sValue="Off")
             Domoticz.Log(f"Unit {unit_num} (GPIO {gpio_pin}) turned OFF (GPIO={gpio_value})")
     
+    def set_gpio_v1_silent(self, gpio_pin, line_info, command, relay_logic):
+        """Set GPIO using v1.x API without updating Domoticz (for state restoration)"""
+        line = line_info['line']
+        
+        # Determine GPIO value based on relay logic and command
+        if relay_logic == "active_low":
+            gpio_value = 0 if command == "On" else 1
+        else:
+            gpio_value = 1 if command == "On" else 0
+        
+        # Set GPIO value only
+        line.set_value(gpio_value)
+    
     def set_gpio_v2(self, unit_num, gpio_pin, command, relay_logic):
         """Set GPIO using v2.x API"""
         from gpiod.line import Value
@@ -332,6 +368,19 @@ class BasePlugin:
         elif command == "Off":
             Devices[unit_num].Update(nValue=0, sValue="Off")
             Domoticz.Log(f"Unit {unit_num} (GPIO {gpio_pin}) turned OFF (GPIO={gpio_value})")
+    
+    def set_gpio_v2_silent(self, gpio_pin, command, relay_logic):
+        """Set GPIO using v2.x API without updating Domoticz (for state restoration)"""
+        from gpiod.line import Value
+        
+        # Determine GPIO value based on relay logic and command
+        if relay_logic == "active_low":
+            gpio_value = Value.ACTIVE if command == "On" else Value.INACTIVE
+        else:
+            gpio_value = Value.INACTIVE if command == "On" else Value.ACTIVE
+        
+        # Set GPIO value only
+        self.line_request.set_value(gpio_pin, gpio_value)
     
     def load_config(self):
         """Load configuration from gpio_config.json"""
